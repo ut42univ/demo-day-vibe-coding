@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>今日の天気予報 - Demo Day Vibe</title>
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+      crossorigin=""
+    />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div id="app">
+      <header class="app-header">
+        <h1>マップで選んで今日の天気</h1>
+        <div class="actions">
+          <button id="locateBtn" title="現在地へ移動">現在地</button>
+        </div>
+      </header>
+      <main class="app-main">
+        <div id="map"></div>
+        <aside id="infoPanel" class="panel">
+          <div class="panel__section">
+            <h2>今日の予報</h2>
+            <div id="status" class="status">地図をクリックして地点を選択</div>
+          </div>
+          <div class="panel__section">
+            <div class="row">
+              <span class="label">緯度:</span><span id="lat">-</span>
+            </div>
+            <div class="row">
+              <span class="label">経度:</span><span id="lon">-</span>
+            </div>
+            <div class="row">
+              <span class="label">日付:</span><span id="date">-</span>
+            </div>
+          </div>
+          <div class="panel__section">
+            <div class="row">
+              <span class="label">最高気温:</span><span id="tmax">-</span>
+            </div>
+            <div class="row">
+              <span class="label">最低気温:</span><span id="tmin">-</span>
+            </div>
+            <div class="row">
+              <span class="label">降水量合計:</span><span id="prcp">-</span>
+            </div>
+            <div class="row">
+              <span class="label">天気:</span><span id="wx">-</span>
+            </div>
+          </div>
+        </aside>
+      </main>
+      <footer class="app-footer">
+        <small>
+          地図タイル ©
+          <a
+            href="https://www.openstreetmap.org/copyright"
+            target="_blank"
+            rel="noreferrer"
+            >OpenStreetMap</a
+          >
+          contributors · 天気データ:
+          <a href="https://open-meteo.com/" target="_blank" rel="noreferrer"
+            >Open‑Meteo</a
+          >
+        </small>
+      </footer>
+    </div>
+
+    <script
+      src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+      integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+      crossorigin=""
+    ></script>
+    <script src="./app.js"></script>
+  </body>
+</html>

@@ -1,0 +1,170 @@
+/*
+  今日の天気予報（1日サマリー）を選択地点で取得して表示する。
+  - 地図: Leaflet
+  - 天気: Open‑Meteo (API キー不要)
+*/
+
+const map = L.map("map").setView([32.7503, 129.8777], 11); // 長崎市中心付近
+
+L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+  maxZoom: 19,
+  attribution: "&copy; OpenStreetMap contributors",
+}).addTo(map);
+
+const state = {
+  marker: null,
+};
+
+const els = {
+  status: document.getElementById("status"),
+  lat: document.getElementById("lat"),
+  lon: document.getElementById("lon"),
+  date: document.getElementById("date"),
+  tmax: document.getElementById("tmax"),
+  tmin: document.getElementById("tmin"),
+  prcp: document.getElementById("prcp"),
+  wx: document.getElementById("wx"),
+  locateBtn: document.getElementById("locateBtn"),
+};
+
+function setStatus(text) {
+  els.status.textContent = text;
+}
+
+function setSummary({ lat, lon, date, tmax, tmin, prcp, wx }) {
+  els.lat.textContent = lat.toFixed(4);
+  els.lon.textContent = lon.toFixed(4);
+  els.date.textContent = date ?? "-";
+  els.tmax.textContent = tmax != null ? `${tmax.toFixed(1)} °C` : "-";
+  els.tmin.textContent = tmin != null ? `${tmin.toFixed(1)} °C` : "-";
+  els.prcp.textContent = prcp != null ? `${prcp.toFixed(1)} mm` : "-";
+  els.wx.textContent = wx ?? "-";
+}
+
+const weatherCodeMap = {
+  0: "快晴",
+  1: "ほぼ晴れ",
+  2: "一部曇り",
+  3: "曇り",
+  45: "霧",
+  48: "霧（霧氷）",
+  51: "霧雨（弱）",
+  53: "霧雨（中）",
+  55: "霧雨（強）",
+  56: "着氷性霧雨（弱）",
+  57: "着氷性霧雨（強）",
+  61: "雨（弱）",
+  63: "雨（中）",
+  65: "雨（強）",
+  66: "着氷性雨（弱）",
+  67: "着氷性雨（強）",
+  71: "雪（弱）",
+  73: "雪（中）",
+  75: "雪（強）",
+  77: "ひょう",
+  80: "にわか雨（弱）",
+  81: "にわか雨（中）",
+  82: "にわか雨（強）",
+  85: "にわか雪（弱）",
+  86: "にわか雪（強）",
+  95: "雷雨（弱〜中）",
+  96: "雷雨（ひょう弱）",
+  99: "雷雨（ひょう強）",
+};
+
+async function fetchTodayForecast(lat, lon) {
+  const params = new URLSearchParams({
+    latitude: lat.toString(),
+    longitude: lon.toString(),
+    daily:
+      "temperature_2m_max,temperature_2m_min,precipitation_sum,weathercode",
+    timezone: "auto",
+    forecast_days: "1",
+  });
+  const url = `https://api.open-meteo.com/v1/forecast?${params.toString()}`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`API error: ${res.status}`);
+  return res.json();
+}
+
+function extractTodaySummary(json) {
+  const d = json.daily;
+  if (!d || !d.time || d.time.length === 0) return null;
+  return {
+    date: d.time[0],
+    tmax: d.temperature_2m_max?.[0],
+    tmin: d.temperature_2m_min?.[0],
+    prcp: d.precipitation_sum?.[0],
+    wxCode: d.weathercode?.[0],
+  };
+}
+
+function ensureMarker(latlng) {
+  if (!state.marker) {
+    state.marker = L.marker(latlng).addTo(map);
+  } else {
+    state.marker.setLatLng(latlng);
+  }
+}
+
+async function handleSelect(latlng) {
+  const { lat, lng: lon } = latlng;
+  ensureMarker(latlng);
+  map.panTo(latlng);
+  setSummary({
+    lat,
+    lon,
+    date: "-",
+    tmax: null,
+    tmin: null,
+    prcp: null,
+    wx: "-",
+  });
+  setStatus("取得中...");
+  try {
+    const json = await fetchTodayForecast(lat, lon);
+    const s = extractTodaySummary(json);
+    if (!s) {
+      setStatus("データが見つかりません");
+      return;
+    }
+    const wx = weatherCodeMap[s.wxCode] ?? `天気コード ${s.wxCode}`;
+    setSummary({
+      lat,
+      lon,
+      date: s.date,
+      tmax: s.tmax,
+      tmin: s.tmin,
+      prcp: s.prcp,
+      wx,
+    });
+    setStatus("");
+  } catch (err) {
+    console.error(err);
+    setStatus("取得に失敗しました");
+  }
+}
+
+map.on("click", (e) => {
+  handleSelect(e.latlng);
+});
+
+els.locateBtn.addEventListener("click", () => {
+  if (!navigator.geolocation) {
+    alert("Geolocation がサポートされていません");
+    return;
+  }
+  setStatus("現在地取得中...");
+  navigator.geolocation.getCurrentPosition(
+    (pos) => {
+      const { latitude, longitude } = pos.coords;
+      const latlng = L.latLng(latitude, longitude);
+      handleSelect(latlng);
+    },
+    (err) => {
+      console.error(err);
+      setStatus("現在地の取得に失敗しました");
+    },
+    { enableHighAccuracy: true, timeout: 10000 }
+  );
+});
