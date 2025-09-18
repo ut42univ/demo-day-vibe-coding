@@ -1,4 +1,4 @@
-# demo-day-vibe-coding
+# One-Click Weather
 
 マップ上で選択した地点の「今日の天気予報」を取得・表示できる最小構成の Web アプリです。
 
