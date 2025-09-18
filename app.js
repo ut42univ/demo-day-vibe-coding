@@ -17,6 +17,7 @@ const state = {
 
 const els = {
   status: document.getElementById("status"),
+  place: document.getElementById("place"),
   lat: document.getElementById("lat"),
   lon: document.getElementById("lon"),
   date: document.getElementById("date"),
@@ -31,7 +32,10 @@ function setStatus(text) {
   els.status.textContent = text;
 }
 
-function setSummary({ lat, lon, date, tmax, tmin, prcp, wx }) {
+function setSummary({ place, lat, lon, date, tmax, tmin, prcp, wx }) {
+  if (place !== undefined) {
+    els.place.textContent = place ?? "-";
+  }
   els.lat.textContent = lat.toFixed(4);
   els.lon.textContent = lon.toFixed(4);
   els.date.textContent = date ?? "-";
@@ -87,6 +91,27 @@ async function fetchTodayForecast(lat, lon) {
   return res.json();
 }
 
+async function reverseGeocode(lat, lon) {
+  try {
+    const params = new URLSearchParams({
+      latitude: lat.toString(),
+      longitude: lon.toString(),
+      language: "ja",
+      count: "1",
+    });
+    const url = `https://geocoding-api.open-meteo.com/v1/reverse?${params.toString()}`;
+    const res = await fetch(url);
+    if (!res.ok) return null;
+    const json = await res.json();
+    const r = json?.results?.[0];
+    if (!r) return null;
+    const parts = [r.name, r.admin1].filter(Boolean);
+    return parts.join("、") || r.country || null;
+  } catch (_) {
+    return null;
+  }
+}
+
 function extractTodaySummary(json) {
   const d = json.daily;
   if (!d || !d.time || d.time.length === 0) return null;
@@ -112,6 +137,7 @@ async function handleSelect(latlng) {
   ensureMarker(latlng);
   map.panTo(latlng);
   setSummary({
+    place: "-",
     lat,
     lon,
     date: "-",
@@ -122,14 +148,28 @@ async function handleSelect(latlng) {
   });
   setStatus("取得中...");
   try {
-    const json = await fetchTodayForecast(lat, lon);
+    const [json, place] = await Promise.all([
+      fetchTodayForecast(lat, lon),
+      reverseGeocode(lat, lon),
+    ]);
     const s = extractTodaySummary(json);
     if (!s) {
+      setSummary({
+        place: place ?? "-",
+        lat,
+        lon,
+        date: "-",
+        tmax: null,
+        tmin: null,
+        prcp: null,
+        wx: "-",
+      });
       setStatus("データが見つかりません");
       return;
     }
     const wx = weatherCodeMap[s.wxCode] ?? `天気コード ${s.wxCode}`;
     setSummary({
+      place: place ?? "-",
       lat,
       lon,
       date: s.date,
@@ -141,6 +181,19 @@ async function handleSelect(latlng) {
     setStatus("");
   } catch (err) {
     console.error(err);
+    try {
+      const place = await reverseGeocode(lat, lon);
+      setSummary({
+        place: place ?? "-",
+        lat,
+        lon,
+        date: "-",
+        tmax: null,
+        tmin: null,
+        prcp: null,
+        wx: "-",
+      });
+    } catch (_) {}
     setStatus("取得に失敗しました");
   }
 }

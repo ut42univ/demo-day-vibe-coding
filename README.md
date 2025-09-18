@@ -14,6 +14,7 @@
 - 選択地点の今日の予報取得（Open‑Meteo）
   - 最高/最低気温、降水量合計、天気コード（→ 日本語の天気説明）
 - 情報パネルでサマリー表示（選択緯度経度、日付、予報指標）
+- 情報パネルでサマリー表示（地点名、選択緯度経度、日付、予報指標）
 - 現在地へ移動ボタン（ブラウザの Geolocation を利用）
 - ローディング状態と簡易エラー表示
 
@@ -28,6 +29,7 @@
 - Open‑Meteo API（CORS 対応・無料・API キー不要）
   - エンドポイント例: `https://api.open-meteo.com/v1/forecast`
   - リクエスト（例）: `daily=temperature_2m_max,temperature_2m_min,precipitation_sum,weathercode&timezone=auto&forecast_days=1`
+  - 逆ジオコーディング: `https://geocoding-api.open-meteo.com/v1/reverse?latitude=...&longitude=...&language=ja`
 
 ## 4. セットアップと実行
 
