@@ -75,6 +75,72 @@ body,
   gap: 12px;
 }
 
+.search-section {
+  flex: 2;
+  margin: 0 20px;
+}
+
+.search-box {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.search-input {
+  flex: 1;
+  padding: 12px 16px;
+  border: 2px solid rgba(59, 130, 246, 0.2);
+  border-radius: var(--border-radius-sm);
+  font-size: 14px;
+  background: rgba(255, 255, 255, 0.9);
+  color: var(--text-primary);
+  transition: var(--transition);
+  font-family: inherit;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  background: white;
+}
+
+.search-input::placeholder {
+  color: var(--text-secondary);
+}
+
+.search-btn {
+  padding: 12px 20px;
+  border-radius: var(--border-radius-sm);
+  border: none;
+  background: linear-gradient(135deg, var(--accent-color), #0891b2);
+  color: white;
+  font-weight: 500;
+  font-size: 14px;
+  cursor: pointer;
+  transition: var(--transition);
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.search-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
+.search-btn:active {
+  transform: translateY(0);
+}
+
+.search-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
 .locate-btn {
   padding: 12px 20px;
   border-radius: var(--border-radius-sm);
@@ -418,6 +484,8 @@ body,
 @media (max-width: 768px) {
   .app-header {
     padding: 12px 16px;
+    flex-direction: column;
+    gap: 12px;
   }
 
   .app-header h1 {
@@ -428,7 +496,17 @@ body,
     font-size: 12px;
   }
 
-  .locate-btn {
+  .search-section {
+    margin: 0;
+    width: 100%;
+  }
+
+  .search-input {
+    font-size: 16px; /* iOS のズームを防ぐ */
+  }
+
+  .locate-btn,
+  .search-btn {
     padding: 10px 16px;
     font-size: 13px;
   }
@@ -462,6 +540,16 @@ body,
 
   .header-left {
     text-align: center;
+  }
+
+  .search-box {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .search-input,
+  .search-btn {
+    width: 100%;
   }
 
   .actions {

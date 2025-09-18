@@ -34,6 +34,8 @@ const els = {
   prcp: document.getElementById("prcp"),
   wx: document.getElementById("wx"),
   locateBtn: document.getElementById("locateBtn"),
+  searchInput: document.getElementById("searchInput"),
+  searchBtn: document.getElementById("searchBtn"),
 };
 
 function setStatus(text, isLoading = false) {
@@ -196,6 +198,46 @@ async function reverseGeocode(lat, lon) {
   }
 }
 
+async function searchLocation(query) {
+  // Nominatim API を使用して地名から座標を検索
+  try {
+    const params = new URLSearchParams({
+      format: "jsonv2",
+      q: query,
+      limit: "5",
+      "accept-language": "ja",
+      addressdetails: "1",
+    });
+    const url = `https://nominatim.openstreetmap.org/search?${params.toString()}`;
+    const res = await fetch(url, {
+      headers: {
+        Accept: "application/json",
+      },
+    });
+
+    if (!res.ok) {
+      throw new Error(`HTTP error! status: ${res.status}`);
+    }
+
+    const results = await res.json();
+
+    if (!results || results.length === 0) {
+      return null;
+    }
+
+    // 最初の結果を使用
+    const result = results[0];
+    return {
+      lat: parseFloat(result.lat),
+      lon: parseFloat(result.lon),
+      displayName: result.display_name,
+    };
+  } catch (error) {
+    console.error("Location search error:", error);
+    return null;
+  }
+}
+
 function extractTodaySummary(json) {
   const d = json.daily;
   if (!d || !d.time || d.time.length === 0) return null;
@@ -320,4 +362,62 @@ els.locateBtn.addEventListener("click", () => {
     },
     { enableHighAccuracy: true, timeout: 10000 }
   );
+});
+
+// 検索機能の処理
+async function handleSearch() {
+  const query = els.searchInput.value.trim();
+  if (!query) {
+    setStatus("🔍 検索したい地名を入力してください");
+    els.searchInput.focus();
+    return;
+  }
+
+  // ボタンを無効化
+  els.searchBtn.disabled = true;
+  els.searchBtn.textContent = "🔍 検索中...";
+  setStatus("🔍 地点を検索中...", true);
+
+  try {
+    const result = await searchLocation(query);
+
+    if (!result) {
+      setStatus(
+        `❌ "${query}" が見つかりませんでした。別の地名を試してください`
+      );
+      els.searchInput.focus();
+      els.searchInput.select();
+      return;
+    }
+
+    // 検索結果の座標で天気を取得
+    const latlng = L.latLng(result.lat, result.lon);
+    await handleSelect(latlng);
+
+    // 地図を検索結果の位置に移動
+    map.setView(latlng, 12);
+
+    // 検索ボックスをクリア（オプション）
+    // els.searchInput.value = "";
+  } catch (error) {
+    console.error("Search error:", error);
+    setStatus(
+      "❌ 検索中にエラーが発生しました。しばらく後にもう一度お試しください"
+    );
+  } finally {
+    // ボタンを有効化
+    els.searchBtn.disabled = false;
+    els.searchBtn.textContent = "🔍 検索";
+  }
+}
+
+// 検索ボタンのクリック処理
+els.searchBtn.addEventListener("click", handleSearch);
+
+// Enterキーでの検索処理
+els.searchInput.addEventListener("keypress", (e) => {
+  if (e.key === "Enter") {
+    e.preventDefault();
+    handleSearch();
+  }
 });

@@ -23,7 +23,22 @@
       <header class="app-header">
         <div class="header-left">
           <h1>🌤️ お天気マップ</h1>
-          <p class="header-subtitle">地図をタップして今日の天気をチェック</p>
+          <p class="header-subtitle">
+            地図をタップまたは地名を検索して今日の天気をチェック
+          </p>
+        </div>
+        <div class="search-section">
+          <div class="search-box">
+            <input
+              type="text"
+              id="searchInput"
+              placeholder="地名を入力（例：東京, 大阪, ニューヨーク）"
+              class="search-input"
+            />
+            <button id="searchBtn" class="search-btn" title="地点を検索">
+              🔍 検索
+            </button>
+          </div>
         </div>
         <div class="actions">
           <button id="locateBtn" class="locate-btn" title="現在地へ移動">
