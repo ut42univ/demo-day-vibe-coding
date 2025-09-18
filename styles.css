@@ -40,6 +40,7 @@ body,
 #map {
   position: absolute;
   inset: 0;
+  z-index: 0; /* パネルより背面に固定 */
 }
 
 .panel {
@@ -52,6 +53,13 @@ body,
   border-radius: 10px;
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
   padding: 12px;
+  z-index: 1200; /* Leaflet controls(1000)より前面 */
+  pointer-events: auto; /* パネルの操作は可能 */
+}
+
+/* パネル直下の背面地図はクリックさせない（誤爆防止） */
+.panel * {
+  pointer-events: auto;
 }
 .panel__section {
   margin: 8px 0;
