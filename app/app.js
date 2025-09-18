@@ -1,10 +1,18 @@
 /*
-  今日の天気予報（1日サマリー）を選択地点で取得して表示する。
-  - 地図: Leaflet
-  - 天気: Open‑Meteo (API キー不要)
+  🌤️ お天気マップ - 地図で確認する今日の天気
+  
+  機能:
+  - 地図上の任意の地点をクリックして天気予報を表示
+  - 現在地ボタンで自動的に現在地の天気を取得
+  - レスポンシブデザインでスマートフォンにも対応
+  
+  使用技術:
+  - 地図: Leaflet (OpenStreetMap)
+  - 天気データ: Open‑Meteo API (無料・APIキー不要)
+  - 位置情報: Geolocation API / Nominatim逆ジオコーディング
 */
 
-const map = L.map("map").setView([32.7503, 129.8777], 11); // 長崎市中心付近
+const map = L.map("map").setView([32.7503, 129.8777], 11); // 長崎市中心部を初期表示
 
 L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
   maxZoom: 19,
@@ -28,8 +36,13 @@ const els = {
   locateBtn: document.getElementById("locateBtn"),
 };
 
-function setStatus(text) {
+function setStatus(text, isLoading = false) {
   els.status.textContent = text;
+  if (isLoading) {
+    els.status.classList.add("loading");
+  } else {
+    els.status.classList.remove("loading");
+  }
 }
 
 function setSummary({ place, lat, lon, date, tmax, tmin, prcp, wx }) {
@@ -43,37 +56,43 @@ function setSummary({ place, lat, lon, date, tmax, tmin, prcp, wx }) {
   els.tmin.textContent = tmin != null ? `${tmin.toFixed(1)} °C` : "-";
   els.prcp.textContent = prcp != null ? `${prcp.toFixed(1)} mm` : "-";
   els.wx.textContent = wx ?? "-";
+
+  // パネルにアニメーションを適用
+  const panel = document.getElementById("infoPanel");
+  panel.style.animation = "none";
+  panel.offsetHeight; // リフロー強制
+  panel.style.animation = null;
 }
 
 const weatherCodeMap = {
-  0: "快晴",
-  1: "ほぼ晴れ",
-  2: "一部曇り",
-  3: "曇り",
-  45: "霧",
-  48: "霧（霧氷）",
-  51: "霧雨（弱）",
-  53: "霧雨（中）",
-  55: "霧雨（強）",
-  56: "着氷性霧雨（弱）",
-  57: "着氷性霧雨（強）",
-  61: "雨（弱）",
-  63: "雨（中）",
-  65: "雨（強）",
-  66: "着氷性雨（弱）",
-  67: "着氷性雨（強）",
-  71: "雪（弱）",
-  73: "雪（中）",
-  75: "雪（強）",
-  77: "ひょう",
-  80: "にわか雨（弱）",
-  81: "にわか雨（中）",
-  82: "にわか雨（強）",
-  85: "にわか雪（弱）",
-  86: "にわか雪（強）",
-  95: "雷雨（弱〜中）",
-  96: "雷雨（ひょう弱）",
-  99: "雷雨（ひょう強）",
+  0: "☀️ 快晴",
+  1: "🌤️ ほぼ晴れ",
+  2: "⛅ 一部曇り",
+  3: "☁️ 曇り",
+  45: "🌫️ 霧",
+  48: "🌫️ 霧（霧氷あり）",
+  51: "🌦️ 弱い霧雨",
+  53: "🌦️ 霧雨",
+  55: "🌧️ 強い霧雨",
+  56: "🧊 弱い着氷性霧雨",
+  57: "🧊 強い着氷性霧雨",
+  61: "🌧️ 弱い雨",
+  63: "🌧️ 雨",
+  65: "🌧️ 強い雨",
+  66: "🧊 弱い着氷性雨",
+  67: "🧊 強い着氷性雨",
+  71: "❄️ 弱い雪",
+  73: "❄️ 雪",
+  75: "❄️ 強い雪",
+  77: "🧊 ひょう",
+  80: "🌦️ 弱いにわか雨",
+  81: "🌦️ にわか雨",
+  82: "⛈️ 強いにわか雨",
+  85: "🌨️ 弱いにわか雪",
+  86: "🌨️ 強いにわか雪",
+  95: "⛈️ 雷雨",
+  96: "⛈️ 雷雨（ひょう注意）",
+  99: "⛈️ 激しい雷雨（ひょう警戒）",
 };
 
 async function fetchTodayForecast(lat, lon) {
@@ -92,7 +111,7 @@ async function fetchTodayForecast(lat, lon) {
 }
 
 async function reverseGeocode(lat, lon) {
-  // 1) まず Open‑Meteo の逆ジオを試す
+  // 1) まず Open‑Meteo の逆ジオコーディングを試行
   try {
     const params = new URLSearchParams({
       latitude: lat.toString(),
@@ -112,10 +131,10 @@ async function reverseGeocode(lat, lon) {
       }
     }
   } catch (_) {
-    // noop → フォールバックへ
+    // エラー時はフォールバックへ進む
   }
 
-  // 2) フォールバック: Nominatim (OSM)
+  // 2) フォールバック: Nominatim (OpenStreetMap) の逆ジオコーディング
   try {
     const params = new URLSearchParams({
       format: "jsonv2",
@@ -127,7 +146,7 @@ async function reverseGeocode(lat, lon) {
     const url = `https://nominatim.openstreetmap.org/reverse?${params.toString()}`;
     const res = await fetch(url, {
       headers: {
-        // ブラウザからは適切な Referer が付きます。明示ヘッダは最小限に。
+        // ブラウザから適切なRefererが送信されます
         Accept: "application/json",
       },
     });
@@ -135,7 +154,7 @@ async function reverseGeocode(lat, lon) {
     const json = await res.json();
     const a = json?.address ?? {};
 
-    // 優先度順にローカリティ名を拾う（町名/地区→市区町村）
+    // 優先度順に地名を取得（町名/地区 → 市区町村）
     const locality =
       a.suburb ||
       a.quarter ||
@@ -147,12 +166,12 @@ async function reverseGeocode(lat, lon) {
       a.county ||
       "";
 
-    // 都道府県等（Nominatim は state/province いずれかになることがある）
+    // 都道府県などの上位行政区画
     const admin = a.state || a.province || a.region || "";
 
     let label = [locality, admin].filter(Boolean).join("、");
     if (!label) {
-      // 最低限の表示名フォールバック（先頭2要素程度に間引き）
+      // 最低限の表示名フォールバック（先頭2要素程度を使用）
       const disp = json?.display_name || "";
       if (disp) {
         label = disp
@@ -163,9 +182,10 @@ async function reverseGeocode(lat, lon) {
       }
     }
 
-    // 日本語中の不自然な空白を軽減（CJK を含む場合は空白を除去）
+    // 日本語文字列の不自然な空白を除去
     function normalizeJa(s) {
       if (!s) return s;
+      // CJK文字を含む場合は空白をすべて除去
       if (/[\u3040-\u30FF\u4E00-\u9FFF]/.test(s)) return s.replace(/\s+/g, "");
       return s.replace(/\s{2,}/g, " ");
     }
@@ -201,16 +221,16 @@ async function handleSelect(latlng) {
   ensureMarker(latlng);
   map.panTo(latlng);
   setSummary({
-    place: "-",
+    place: "📍 地点を選択中...",
     lat,
     lon,
     date: "-",
     tmax: null,
     tmin: null,
     prcp: null,
-    wx: "-",
+    wx: "⏳ 待機中",
   });
-  setStatus("取得中...");
+  setStatus("📡 天気データを取得中...", true);
   try {
     const [json, place] = await Promise.all([
       fetchTodayForecast(lat, lon),
@@ -219,21 +239,21 @@ async function handleSelect(latlng) {
     const s = extractTodaySummary(json);
     if (!s) {
       setSummary({
-        place: place ?? "-",
+        place: place ?? "📍 不明な地点",
         lat,
         lon,
         date: "-",
         tmax: null,
         tmin: null,
         prcp: null,
-        wx: "-",
+        wx: "❓ データなし",
       });
-      setStatus("データが見つかりません");
+      setStatus("⚠️ 天気データが見つかりませんでした");
       return;
     }
-    const wx = weatherCodeMap[s.wxCode] ?? `天気コード ${s.wxCode}`;
+    const wx = weatherCodeMap[s.wxCode] ?? `❓ 天気コード ${s.wxCode}`;
     setSummary({
-      place: place ?? "-",
+      place: place ?? "📍 不明な地点",
       lat,
       lon,
       date: s.date,
@@ -242,36 +262,40 @@ async function handleSelect(latlng) {
       prcp: s.prcp,
       wx,
     });
-    setStatus("");
+    setStatus("✅ 天気データを取得しました");
+    // ステータスメッセージを3秒後に更新
+    setTimeout(() => setStatus("🌤️ 他の場所も確認してみてください"), 3000);
   } catch (err) {
     console.error(err);
     try {
       const place = await reverseGeocode(lat, lon);
       setSummary({
-        place: place ?? "-",
+        place: place ?? "📍 不明な地点",
         lat,
         lon,
         date: "-",
         tmax: null,
         tmin: null,
         prcp: null,
-        wx: "-",
+        wx: "❓ データなし",
       });
     } catch (_) {}
-    setStatus("取得に失敗しました");
+    setStatus("❌ 天気データの取得に失敗しました");
   }
 }
 
+// 地図クリック時の処理
 map.on("click", (e) => {
   handleSelect(e.latlng);
 });
 
+// 現在地ボタンの処理
 els.locateBtn.addEventListener("click", () => {
   if (!navigator.geolocation) {
-    alert("Geolocation がサポートされていません");
+    alert("❌ このブラウザでは現在地機能がサポートされていません");
     return;
   }
-  setStatus("現在地取得中...");
+  setStatus("📍 現在地を取得中...", true);
   navigator.geolocation.getCurrentPosition(
     (pos) => {
       const { latitude, longitude } = pos.coords;
@@ -280,7 +304,19 @@ els.locateBtn.addEventListener("click", () => {
     },
     (err) => {
       console.error(err);
-      setStatus("現在地の取得に失敗しました");
+      let errorMessage = "❌ 現在地の取得に失敗しました";
+      switch (err.code) {
+        case err.PERMISSION_DENIED:
+          errorMessage = "❌ 位置情報の利用が許可されていません";
+          break;
+        case err.POSITION_UNAVAILABLE:
+          errorMessage = "❌ 位置情報が利用できません";
+          break;
+        case err.TIMEOUT:
+          errorMessage = "❌ 位置情報の取得がタイムアウトしました";
+          break;
+      }
+      setStatus(errorMessage);
     },
     { enableHighAccuracy: true, timeout: 10000 }
   );

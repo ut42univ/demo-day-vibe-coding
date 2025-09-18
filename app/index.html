@@ -3,70 +3,107 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>今日の天気予報 - Demo Day Vibe</title>
+    <title>🌤️ お天気マップ - 地図で確認する今日の天気</title>
     <link
       rel="stylesheet"
       href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
       integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
       crossorigin=""
     />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&display=swap"
+      rel="stylesheet"
+    />
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
     <div id="app">
       <header class="app-header">
-        <h1>マップで選んで今日の天気</h1>
+        <div class="header-left">
+          <h1>🌤️ お天気マップ</h1>
+          <p class="header-subtitle">地図をタップして今日の天気をチェック</p>
+        </div>
         <div class="actions">
-          <button id="locateBtn" title="現在地へ移動">現在地</button>
+          <button id="locateBtn" class="locate-btn" title="現在地へ移動">
+            📍 現在地
+          </button>
         </div>
       </header>
       <main class="app-main">
         <div id="map"></div>
         <aside id="infoPanel" class="panel">
-          <div class="panel__section">
-            <h2>今日の予報</h2>
-            <div id="status" class="status">地図をクリックして地点を選択</div>
-          </div>
-          <div class="panel__section">
-            <div class="row">
-              <span class="label">地点:</span><span id="place">-</span>
-            </div>
-            <div class="row">
-              <span class="label">緯度:</span><span id="lat">-</span>
-            </div>
-            <div class="row">
-              <span class="label">経度:</span><span id="lon">-</span>
-            </div>
-            <div class="row">
-              <span class="label">日付:</span><span id="date">-</span>
+          <div class="panel__section panel__title">
+            <h2>🌡️ 今日の天気予報</h2>
+            <div id="status" class="status">
+              🗺️ 地図をタップして場所を選択してください
             </div>
           </div>
-          <div class="panel__section">
+          <div class="panel__section location-info">
+            <h3>📍 選択地点</h3>
             <div class="row">
-              <span class="label">最高気温:</span><span id="tmax">-</span>
+              <span class="label">場所</span
+              ><span id="place" class="value">-</span>
             </div>
             <div class="row">
-              <span class="label">最低気温:</span><span id="tmin">-</span>
+              <span class="label">緯度</span
+              ><span id="lat" class="value">-</span>
             </div>
             <div class="row">
-              <span class="label">降水量合計:</span><span id="prcp">-</span>
+              <span class="label">経度</span
+              ><span id="lon" class="value">-</span>
             </div>
             <div class="row">
-              <span class="label">天気:</span><span id="wx">-</span>
+              <span class="label">日付</span
+              ><span id="date" class="value">-</span>
+            </div>
+          </div>
+          <div class="panel__section weather-info">
+            <h3>🌤️ 天気詳細</h3>
+            <div class="weather-grid">
+              <div class="weather-item">
+                <span class="weather-icon">🌡️</span>
+                <div class="weather-content">
+                  <span class="label">最高気温</span>
+                  <span id="tmax" class="value temp-max">-</span>
+                </div>
+              </div>
+              <div class="weather-item">
+                <span class="weather-icon">❄️</span>
+                <div class="weather-content">
+                  <span class="label">最低気温</span>
+                  <span id="tmin" class="value temp-min">-</span>
+                </div>
+              </div>
+              <div class="weather-item">
+                <span class="weather-icon">💧</span>
+                <div class="weather-content">
+                  <span class="label">降水量</span>
+                  <span id="prcp" class="value precipitation">-</span>
+                </div>
+              </div>
+              <div class="weather-item">
+                <span class="weather-icon">☀️</span>
+                <div class="weather-content">
+                  <span class="label">天気</span>
+                  <span id="wx" class="value weather-condition">-</span>
+                </div>
+              </div>
             </div>
           </div>
         </aside>
       </main>
       <footer class="app-footer">
         <small>
-          地図タイル ©
+          🗺️ 地図データ:
           <a
             href="https://www.openstreetmap.org/copyright"
             target="_blank"
             rel="noreferrer"
             >OpenStreetMap</a
           >
-          contributors · 天気データ:
+          contributors · 🌤️ 天気データ:
           <a href="https://open-meteo.com/" target="_blank" rel="noreferrer"
             >Open‑Meteo</a
           >
