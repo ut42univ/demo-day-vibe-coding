@@ -92,6 +92,7 @@ async function fetchTodayForecast(lat, lon) {
 }
 
 async function reverseGeocode(lat, lon) {
+  // 1) まず Open‑Meteo の逆ジオを試す
   try {
     const params = new URLSearchParams({
       latitude: lat.toString(),
@@ -101,12 +102,75 @@ async function reverseGeocode(lat, lon) {
     });
     const url = `https://geocoding-api.open-meteo.com/v1/reverse?${params.toString()}`;
     const res = await fetch(url);
+    if (res.ok) {
+      const json = await res.json();
+      const r = json?.results?.[0];
+      if (r) {
+        const parts = [r.name, r.admin1].filter(Boolean);
+        const s = parts.join("、") || r.country || null;
+        if (s) return s;
+      }
+    }
+  } catch (_) {
+    // noop → フォールバックへ
+  }
+
+  // 2) フォールバック: Nominatim (OSM)
+  try {
+    const params = new URLSearchParams({
+      format: "jsonv2",
+      lat: lat.toString(),
+      lon: lon.toString(),
+      "accept-language": "ja",
+      addressdetails: "1",
+    });
+    const url = `https://nominatim.openstreetmap.org/reverse?${params.toString()}`;
+    const res = await fetch(url, {
+      headers: {
+        // ブラウザからは適切な Referer が付きます。明示ヘッダは最小限に。
+        Accept: "application/json",
+      },
+    });
     if (!res.ok) return null;
     const json = await res.json();
-    const r = json?.results?.[0];
-    if (!r) return null;
-    const parts = [r.name, r.admin1].filter(Boolean);
-    return parts.join("、") || r.country || null;
+    const a = json?.address ?? {};
+
+    // 優先度順にローカリティ名を拾う（町名/地区→市区町村）
+    const locality =
+      a.suburb ||
+      a.quarter ||
+      a.village ||
+      a.town ||
+      a.city_district ||
+      a.city ||
+      a.municipality ||
+      a.county ||
+      "";
+
+    // 都道府県等（Nominatim は state/province いずれかになることがある）
+    const admin = a.state || a.province || a.region || "";
+
+    let label = [locality, admin].filter(Boolean).join("、");
+    if (!label) {
+      // 最低限の表示名フォールバック（先頭2要素程度に間引き）
+      const disp = json?.display_name || "";
+      if (disp) {
+        label = disp
+          .split(",")
+          .slice(0, 2)
+          .map((s) => s.trim())
+          .join("、");
+      }
+    }
+
+    // 日本語中の不自然な空白を軽減（CJK を含む場合は空白を除去）
+    function normalizeJa(s) {
+      if (!s) return s;
+      if (/[\u3040-\u30FF\u4E00-\u9FFF]/.test(s)) return s.replace(/\s+/g, "");
+      return s.replace(/\s{2,}/g, " ");
+    }
+
+    return label ? normalizeJa(label) : null;
   } catch (_) {
     return null;
   }

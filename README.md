@@ -30,6 +30,8 @@
   - エンドポイント例: `https://api.open-meteo.com/v1/forecast`
   - リクエスト（例）: `daily=temperature_2m_max,temperature_2m_min,precipitation_sum,weathercode&timezone=auto&forecast_days=1`
   - 逆ジオコーディング: `https://geocoding-api.open-meteo.com/v1/reverse?latitude=...&longitude=...&language=ja`
+    - 取得失敗や空結果時は Nominatim (OpenStreetMap) にフォールバックします。
+    - 公共 API のため短時間に大量のリクエストは避けてください（レート制限の可能性があります）。
 
 ## 4. セットアップと実行
 
